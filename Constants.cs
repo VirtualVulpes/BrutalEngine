@@ -1,4 +1,4 @@
-namespace HelloBrutal;
+namespace BrutalEngine;
 
 public static class Constants
 {

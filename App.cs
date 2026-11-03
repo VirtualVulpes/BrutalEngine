@@ -5,7 +5,7 @@ using Brutal.ImGuiApi.Backends;
 using Brutal.Numerics;
 using Brutal.OpenGlApi;
 
-namespace HelloBrutal;
+namespace BrutalEngine;
 
 internal record struct Vertex(float3 Position, float3 Color);
 
@@ -90,7 +90,7 @@ public class App : IDisposable
         using var glfwBackend = new GlfwBackend(_window, GlfwBackend.ClientApi.OpenGL);
         using var openGlBackend = new OpenGlBackend();
 
-        OpenGl.ClearColor(float4.Rgb(0.2f, 0.3f, 0.3f));
+        OpenGl.ClearColor(float4.Rgb(0.05f, 0.05f, 0.05f));
 
         var model = float4x4.Identity;
 
@@ -105,7 +105,7 @@ public class App : IDisposable
             _inputManager.Update();
 
             Glfw.PollEvents();
-
+            
             glfwBackend.NewFrame();
             openGlBackend.NewFrame();
             ImGui.NewFrame();
@@ -115,7 +115,6 @@ public class App : IDisposable
             if (ImGui.Begin("Hello ImGui"u8))
             {
                 ImGui.Text("Hello from Dear ImGui!"u8);
-
                 var cameraPos = _camera.Position;
                 ImGui.DragFloat3("Camera Position"u8, ref cameraPos);
                 _camera.Position = cameraPos;
@@ -125,7 +124,7 @@ public class App : IDisposable
 
             ImGui.Render();
 
-            if (_inputManager.IsKeyDown(GlfwKey.Escape))
+            if (_inputManager.IsKeyPressed(GlfwKey.Escape))
                 _window.ShouldClose = true;
 
             var movement = float3.Zero;
@@ -147,7 +146,7 @@ public class App : IDisposable
             var mouseDelta = _inputManager.MouseDelta;
             var sensitivity = 0.001f;
             _camera.Rotate((float)mouseDelta.X * sensitivity, -(float)mouseDelta.Y * sensitivity);
-
+            
             OpenGl.Clear(GlClearBit.Color);
             program.Use();
 

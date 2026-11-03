@@ -1,6 +1,6 @@
 using Brutal.Numerics;
 
-namespace HelloBrutal;
+namespace BrutalEngine;
 
 public class Camera
 {

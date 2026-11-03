@@ -1,4 +1,4 @@
-﻿namespace HelloBrutal;
+﻿namespace BrutalEngine;
 
 internal static class Program
 {
