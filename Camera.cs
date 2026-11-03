@@ -4,17 +4,18 @@ namespace HelloBrutal;
 
 public class Camera
 {
-    public float3 Position = new(0.0f, 0.0f, 3.0f);
-    private float _yaw = float.DegreesToRadians(-90.0f);
-    private float _pitch = 0.0f;
-    public float AspectRatio = (float)800 / 600;
-    public float Fov = float.DegreesToRadians(60.0f);
+    private const float ZNear = 0.1f;
+    private const float ZFar = 100.0f;
 
+    private readonly float _fov = float.DegreesToRadians(60.0f);
+
+    private float _yaw = float.DegreesToRadians(-90.0f);
+    private float _pitch;
     private float3 _forward = new(0.0f, 0.0f, -1.0f);
     private float3 _right = float3.UnitX;
 
-    private float _zNear = 0.1f;
-    private float _zFar = 100.0f;
+    public float3 Position { get; set; } = new(0.0f, 0.0f, 3.0f);
+    public float AspectRatio { get; set; } = (float)Constants.WindowWidth / Constants.WindowHeight;
 
     public float4x4 GetView()
     {
@@ -23,7 +24,7 @@ public class Camera
 
     public float4x4 GetProjection()
     {
-        return float4x4.CreatePerspectiveFieldOfView(Fov, AspectRatio, _zNear, _zFar);
+        return float4x4.CreatePerspectiveFieldOfView(_fov, AspectRatio, ZNear, ZFar);
     }
 
     public void MoveRelative(float3 localDelta)
@@ -40,8 +41,8 @@ public class Camera
 
     private void UpdateVectors()
     {
-        _forward = float3.Normalize(new float3(float.Cos(_yaw) * float.Cos(_pitch), float.Sin(_pitch),
+        _forward = float3.NormalizeOrZero(new float3(float.Cos(_yaw) * float.Cos(_pitch), float.Sin(_pitch),
             float.Sin(_yaw) * float.Cos(_pitch)));
-        _right = float3.Normalize(float3.Cross(_forward, float3.UnitY));
+        _right = float3.NormalizeOrZero(float3.Cross(_forward, float3.UnitY));
     }
 }

@@ -14,11 +14,8 @@ public class App : IDisposable
     private readonly ImGuiContextPtr _context;
     private readonly GlfwWindow _window;
 
-    private const int Width = 800;
-    private const int Height = 600;
-
-    private Camera _camera;
-    private float dt;
+    private readonly Camera _camera;
+    private readonly InputManager _inputManager;
 
     public App()
     {
@@ -35,8 +32,10 @@ public class App : IDisposable
         Glfw.WindowHint(GlfwWindowHint.OpenGlProfile, Glfw.Constants.GLFW_OPENGL_CORE_PROFILE);
 
         _window = Glfw.CreateWindow(
-            new GlfwWindow.CreateInfo { Title = "Hello ImGui", Size = new int2(Width, Height) }
+            new GlfwWindow.CreateInfo { Title = "Hello ImGui", Size = new int2(Constants.WindowWidth, Constants.WindowHeight) }
         );
+
+        Glfw.PInvoke.SetInputMode(_window, (int)GlfwInputMode.Cursor, (int)GlfwCursorMode.Disabled);
 
         _window.MakeContextCurrent();
         Glfw.SwapInterval(1); // vsync
@@ -46,42 +45,11 @@ public class App : IDisposable
             if (!Glad.Initialize(Glfw.PInvoke.GetProcAddress))
                 throw new InvalidOperationException("Failed to load OpenGL functions with GLAD");
         }
-        
+
         OpenGl.Enable(GlCapability.CullFace);
 
         _camera = new Camera();
-        
-        _window.OnKey += (handle, key, _, _, _) =>
-        {
-            if (key == GlfwKey.Escape)
-                handle.ShouldClose = true;
-
-            var speed = 20.0f;
-            
-            if (key == GlfwKey.A)
-                _camera.MoveRelative(-float3.UnitX * dt * speed);
-            if (key == GlfwKey.D)
-                _camera.MoveRelative(float3.UnitX * dt * speed);
-            if (key == GlfwKey.W)
-                _camera.MoveRelative(float3.UnitZ * dt * speed);
-            if (key == GlfwKey.S)
-                _camera.MoveRelative(-float3.UnitZ * dt * speed);
-            if (key == GlfwKey.Space)
-                _camera.MoveRelative(float3.UnitY * dt * speed);
-            if (key == GlfwKey.LeftControl)
-                _camera.MoveRelative(-float3.UnitY * dt * speed);
-
-            var sensitivity = 200.0f;
-            
-            if (key == GlfwKey.Up) 
-                _camera.Rotate(0.0f, float.DegreesToRadians(1.0f * dt * sensitivity));
-            if (key == GlfwKey.Down) 
-                _camera.Rotate(0.0f, float.DegreesToRadians(-1.0f * dt * sensitivity));
-            if (key == GlfwKey.Left) 
-                _camera.Rotate(float.DegreesToRadians(-1.0f * dt * sensitivity), 0.0f);
-            if (key == GlfwKey.Right) 
-                _camera.Rotate(float.DegreesToRadians(1.0f * dt * sensitivity), 0.0f);
-        }; 
+        _inputManager = new InputManager(_window);
 
         _window.OnFramebufferSize += (_, size) =>
         {
@@ -123,17 +91,19 @@ public class App : IDisposable
         using var openGlBackend = new OpenGlBackend();
 
         OpenGl.ClearColor(float4.Rgb(0.2f, 0.3f, 0.3f));
-        
+
         var model = float4x4.Identity;
 
         var last = Stopwatch.GetTimestamp();
-        
+
         while (!_window.ShouldClose)
         {
             var now = Stopwatch.GetTimestamp();
-            dt = float.Min((float)Stopwatch.GetElapsedTime(last, now).TotalSeconds, 0.1f);
+            var dt = float.Min((float)Stopwatch.GetElapsedTime(last, now).TotalSeconds, 0.1f);
             last = now;
-            
+
+            _inputManager.Update();
+
             Glfw.PollEvents();
 
             glfwBackend.NewFrame();
@@ -146,12 +116,37 @@ public class App : IDisposable
             {
                 ImGui.Text("Hello from Dear ImGui!"u8);
 
-                ImGui.DragFloat3("Camera Position"u8, ref _camera.Position);
+                var cameraPos = _camera.Position;
+                ImGui.DragFloat3("Camera Position"u8, ref cameraPos);
+                _camera.Position = cameraPos;
             }
 
             ImGui.End();
 
             ImGui.Render();
+
+            if (_inputManager.IsKeyDown(GlfwKey.Escape))
+                _window.ShouldClose = true;
+
+            var movement = float3.Zero;
+            var speed = 5.0f;
+            if (_inputManager.IsKeyDown(GlfwKey.W))
+                movement += float3.UnitZ;
+            if (_inputManager.IsKeyDown(GlfwKey.S))
+                movement -= float3.UnitZ;
+            if (_inputManager.IsKeyDown(GlfwKey.A))
+                movement -= float3.UnitX;
+            if (_inputManager.IsKeyDown(GlfwKey.D))
+                movement += float3.UnitX;
+            if (_inputManager.IsKeyDown(GlfwKey.Space))
+                movement += float3.UnitY;
+            if (_inputManager.IsKeyDown(GlfwKey.LeftControl))
+                movement -= float3.UnitY;
+            _camera.MoveRelative(float3.NormalizeOrZero(movement) * dt * speed);
+
+            var mouseDelta = _inputManager.MouseDelta;
+            var sensitivity = 0.001f;
+            _camera.Rotate((float)mouseDelta.X * sensitivity, -(float)mouseDelta.Y * sensitivity);
 
             OpenGl.Clear(GlClearBit.Color);
             program.Use();
