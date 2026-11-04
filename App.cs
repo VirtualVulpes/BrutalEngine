@@ -92,7 +92,7 @@ public class App : IDisposable
 
         OpenGl.ClearColor(float4.Rgb(0.05f, 0.05f, 0.05f));
 
-        Transform t = new Transform();
+        var t = Transform.Identity;
 
         var last = Stopwatch.GetTimestamp();
 
@@ -150,11 +150,11 @@ public class App : IDisposable
             OpenGl.Clear(GlClearBit.Color);
             program.Use();
 
-            t.Rotation.X += float.DegreesToRadians(10.0f) * dt;
-            t.Rotation.Y += float.DegreesToRadians(20.0f) * dt;
-            t.Rotation.Z += float.DegreesToRadians(30.0f) * dt;
+            t.RotateLocal(float3.UnitX, float.DegreesToRadians(10.0f) * dt);
+            t.RotateLocal(float3.UnitY, float.DegreesToRadians(20.0f) * dt);
+            t.RotateLocal(float3.UnitZ, float.DegreesToRadians(30.0f) * dt);
             
-            program.Uniform("mvp"u8, t.ModelMatrix * _camera.GetView() * _camera.GetProjection());
+            program.Uniform("mvp"u8, t.GetModelMatrix() * _camera.GetView() * _camera.GetProjection());
 
             vertexArray.Bind();
             OpenGl.Draw(GlTopology.Triangles, 6, 1, 0, 0);
